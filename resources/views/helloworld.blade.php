@@ -30,10 +30,11 @@
       "/js/countries.geojson"
     );
 
+    const ent = [];
+
     promise
     .then(function (dataSource) {
       viewer.dataSources.add(dataSource);
-
       //Get the array of entities
       const entities = dataSource.entities.values;
       console.log(entities);
@@ -42,29 +43,43 @@
         //Some states have multiple entities, so we store the color in a
         //hash so that we use the same color for the entire state.
         const entity = entities[i];
+        ent.push(entity);
         const name = entity.name;
         let color = Cesium.Color.fromCssColorString(entity.properties.REGIONCOLOR.getValue());
         //Set the polygon material to our random color.
         entity.polygon.material = color;
         //Remove the outlines.
-        handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+        //Extrude the polygon based on the state's population.  Each entity
+        //stores the properties for the GeoJSON feature it was created from
+        //Since the population is a huge number, we divide by 50.
+      }
+    })
+    .catch(function (error) {
+      //Display any errrors encountered while loading.
+      window.alert(error);
+    });
+
+    handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
           handler.setInputAction(function (movement) {
            const pickedObject = scene.pick(movement.endPosition);
            console.log(pickedObject);
-            if (Cesium.defined(pickedObject) && pickedObject.id === entity) {
-              entities.forEach((entity) => {
-                                              if(entity.properties.REGIONCODE.getValue() 
+           ent.forEach((entity)=>{
+                if (Cesium.defined(pickedObject)) {
+                              if(entity.properties.REGIONCODE.getValue() 
                                                   === 
                                                   pickedObject.id.properties.REGIONCODE.getValue()){
+                                                    entity.polygon.height = 0;
                                                     entity.polygon.outline = true;
                                                     entity.polygon.outlineColor = Cesium.Color.fromCssColorString(entity.properties.HIGHLIGHTCOLOR.getValue());
                                                   }
                                               console.log({ entity });
                                             }
-                              );
-            } else {
+                              
+            else {
+              entity.polygon.height = 0;
               entity.polygon.outline = false;
             } 
+           });
             /* const feature = scene.pick(movement.endPosition);
             if (feature instanceof Cesium.Cesium3DTileFeature) {
                 const propertyIds = feature.getPropertyIds();
@@ -75,15 +90,6 @@
                 }
             } */
           }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
-        //Extrude the polygon based on the state's population.  Each entity
-        //stores the properties for the GeoJSON feature it was created from
-        //Since the population is a huge number, we divide by 50.
-      }
-    })
-    .catch(function (error) {
-      //Display any errrors encountered while loading.
-      window.alert(error);
-    });
   </script>
  </div>
 </body>
